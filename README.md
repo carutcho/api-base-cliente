@@ -22,6 +22,7 @@ Api para gestão de clientes da Builders
 - Incluir cliente
 - Atualizar cliente
 - Buscar cliente por filtro paginado
+- Remover cliente
 
 
 ## Apêndice
