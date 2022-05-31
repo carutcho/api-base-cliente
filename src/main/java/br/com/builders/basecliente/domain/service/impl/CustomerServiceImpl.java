@@ -68,7 +68,7 @@ public class CustomerServiceImpl implements CustomerService {
 
         Optional<Customer> customer = customerRepository.findById(id);
         if (customer.isEmpty()){
-            return null;
+            throw new BusinessException(CodigoMensagem.RN_004_CODIGO_NAO_ENCONTRADO);
         }
         return customer.get();
     }
@@ -135,10 +135,6 @@ public class CustomerServiceImpl implements CustomerService {
 
     private Customer getCustomer(Customer customer) {
         Customer base = findById(customer.getId());
-        if (ObjectUtils.isEmpty(base)){
-            throw new BusinessException(CodigoMensagem.RN_004_CODIGO_NAO_ENCONTRADO);
-
-        }
         return base;
     }
 
@@ -160,7 +156,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     private void validateDocumentUpdate(Customer customer) {
         Customer base = findByCpf(customer.getCpf());
-        if (base.getId() != customer.getId()) {
+        if (base != null && base.getId() != customer.getId()) {
             throw new BusinessException(CodigoMensagem.RN_CUSTOMER_003_CUSTOMER_EXISTENTE_DOCUMENTO);
         }
     }
