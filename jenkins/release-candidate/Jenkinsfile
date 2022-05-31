@@ -1,0 +1,85 @@
+def buildVersion = "${params.VERSAO}-${BUILD_ID}";
+
+def dockerRepoName = "builders/base_cliente";
+def dockerImageTag = "${ARTIFACTORY_DOCKER_REGISTRY}/${dockerRepoName}:${buildVersion}";
+
+def appScanAplication = "bcc04cf4-4d47-4f22-8078-e170d5b0dd34";
+
+properties([
+    buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')),
+    disableConcurrentBuilds(),
+    parameters([
+        string(name: 'VERSAO', description: 'Deve ser correspondente à branch de release do git. ex: branch "release/2.0.0" - VERSAO: 2.0.0'),
+        booleanParam(defaultValue: false, description: '', name: 'APPSCAN')
+    ])
+])
+
+pipeline {
+
+    agent {
+        label "docker && openjdk8"
+    }
+
+    stages {
+        stage('build') {
+            steps {
+                sh 'chmod +x mvnw'
+                sh "./mvnw clean package"
+            }
+        }
+
+        stage('appscan') {
+            when {
+               expression { params.APPSCAN }
+            }
+            steps {
+                sh """
+                    rm -rf target/appscan
+                    mkdir -p target/appscan
+                    cp Dockerfile target/appscan
+                    cp target/*.jar target/appscan
+                """
+
+                appscan(application: "${appScanAplication}",
+                    name: "${JOB_BASE_NAME}-${buildVersion}",
+                    failBuild: true,
+                    failureConditions: [failure_condition(failureType: 'high', threshold: 0)],
+                    email: "suporte@builders.io",
+                    credentials: 'appscan',
+                    scanner: static_analyzer(
+                        hasOptions: false,
+                        target: "${WORKSPACE}/target/appscan"),
+                    type: 'Static Analyzer',
+                    wait: true)
+            }
+        }
+
+        stage('docker image') {
+            steps {
+                sh "docker build . -t ${dockerImageTag}"
+            }
+        }
+
+        stage('publish') {
+            steps {
+                rtServer (
+                    id: "artifactory",
+                    credentialsId: "svc_jenkins_prd-ad"
+                )
+                rtDockerPush(
+                    serverId: "artifactory",
+                    image: "${dockerImageTag}",
+                    targetRepo: "docker-local",
+                    buildName: "${JOB_BASE_NAME}",
+                    buildNumber: "${BUILD_ID}"
+                )
+                rtPublishBuildInfo (
+                    serverId: "artifactory",
+                    buildName: "${JOB_BASE_NAME}",
+                    buildNumber: "${BUILD_ID}"
+                )
+            }
+        }
+    }
+}
+

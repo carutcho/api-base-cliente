@@ -1,0 +1,17 @@
+{
+    "protocol": "http",
+    "port": 9779,
+	"name": "cp-base-cliente",
+    "numberOfRequests": 0,
+    "recordRequests": true,
+    "requests": [],
+    "stubs": [{
+        "responses": [{
+            "proxy": {
+                "mode": "proxyAlways",
+                "to": "http://cp-base-cliente:8080",
+                "predicateGenerators": [{ "matches": { "path": true } }]
+            }
+        }]
+    }]
+}

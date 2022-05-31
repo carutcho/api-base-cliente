@@ -1,0 +1,39 @@
+version: "3.7"
+
+services:
+  base-cliente:
+    image:
+    logging:
+      driver: json-file
+    secrets:
+      - auth-basic-builders
+    environment:
+      TZ: America/Sao_Paulo
+      JAVA_OPTS: "-Xms768m -Xmx768m"
+      SPRING_PROFILES_ACTIVE: DEV
+      SERVER_PORT: 8080
+      AUTH_BASIC_BUILDERS: $${docker-secret-auth-basic-builders}
+      TIMEOUT_REQUEST: 4000
+    healthcheck:
+      test: wget --tries=1 --spider http://localhost:8080/health/check || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 130s
+secrets:
+  auth-basic-builders:
+    external: true
