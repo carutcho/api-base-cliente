@@ -17,7 +17,6 @@ import org.springframework.util.ObjectUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Optional;
 
 
 @AllArgsConstructor
@@ -66,11 +65,10 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public Customer findById(long id) {
 
-        Optional<Customer> customer = customerRepository.findById(id);
-        if (customer.isEmpty()){
-            throw new BusinessException(CodigoMensagem.RN_004_CODIGO_NAO_ENCONTRADO);
-        }
-        return customer.get();
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(CodigoMensagem.RN_004_CODIGO_NAO_ENCONTRADO));
+
+        return customer;
     }
 
     @Override
@@ -82,11 +80,8 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public Customer findByCpf(String cpf) {
         validateDocument(cpf);
-        Optional<Customer> customer = customerRepository.findByCpf(cpf);
-        if (customer.isEmpty()){
-            return null;
-        }
-        return customer.get();
+        Customer customer = customerRepository.findByCpf(cpf).orElse(null);
+        return customer;
     }
 
     @Override
