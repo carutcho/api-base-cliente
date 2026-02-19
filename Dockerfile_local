@@ -1,0 +1,16 @@
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+COPY pom.xml ./
+COPY src src
+RUN mvn clean package -DskipTests -B
+
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+
+# 8080 aplicacao | 5005 debug remoto
+EXPOSE 8080 5005
+
+ENTRYPOINT ["java", \
+  "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005", \
+  "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-DEV}", \
+  "-jar", "app.jar"]

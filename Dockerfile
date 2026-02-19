@@ -1,22 +1,17 @@
-FROM artifactory.builders.io/openjdk:12
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+WORKDIR /app
 
-RUN adduser -S appuser
-USER appuser
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-VOLUME /tmp
+COPY src ./src
+RUN mvn clean package -DskipTests -B
 
-ENV SERVER_PORT 8080
+FROM eclipse-temurin:21-jre
+WORKDIR /app
 
-EXPOSE 8081
+COPY --from=build /app/target/*.jar app.jar
 
-ARG DEPENDENCY=target/dependency
+EXPOSE 8080
 
-COPY ${DEPENDENCY}/BOOT-INF/lib /app/lib
-
-COPY ${DEPENDENCY}/META-INF /app/META-INF
-COPY ${DEPENDENCY}/BOOT-INF/classes /app
-
-ENTRYPOINT java -cp app:app/lib/* \
-    -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
-    ${JAVA_OPTS} \
-    BaseClienteApplication
+ENTRYPOINT ["java", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-DEV}", "-jar", "app.jar"]
